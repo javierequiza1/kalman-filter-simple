@@ -1,4 +1,4 @@
-# High-Performance Kalman Filter & Hyperparameter Optimization 🚀
+# High-Performance Kalman Filter & Hyperparameter Optimization 
 
 ![Fortran](https://img.shields.io/badge/Fortran-Modern-734f96?style=flat-square&logo=fortran)
 ![Gnuplot](https://img.shields.io/badge/Visualization-Gnuplot-red?style=flat-square)
@@ -8,14 +8,14 @@ A robust implementation of a **1D Kalman Filter** in Modern Fortran designed to 
 
 This project goes beyond standard filtering by implementing a **Grid Search Optimizer** that generates a 3D error hypersurface. This allows for the precise identification of the optimal Process Noise Covariance matrices ($Q$) by minimizing the Root Mean Square Error (RMSE).
 
-## 🌟 Key Features
+##  Key Features
 
-* **⚡ High Performance:** Written in optimized Modern Fortran using vector operations.
-* **🧠 Branchless Logic:** Utilizes Fortran's `merge` intrinsic for conditional logic, ensuring constant execution time and pipeline efficiency (avoiding `IF` branching in the main loop).
-* **🎯 Hyperparameter Optimization:** Includes a module to explore the hyperparameter space ($\log_{10} Q_{pos}$ vs $\log_{10} Q_{vel}$), generating a heat map of the error landscape.
-* **📊 Professional Visualization:** Scripts for **Gnuplot** to render real-time tracking dashboards and 3D optimization surfaces.
+* ** High Performance:** Written in optimized Modern Fortran using vector operations.
+* ** Branchless Logic:** Utilizes Fortran's `merge` intrinsic for conditional logic, ensuring constant execution time and pipeline efficiency (avoiding `IF` branching in the main loop).
+* ** Hyperparameter Optimization:** Includes a module to explore the hyperparameter space ($\log_{10} Q_{pos}$ vs $\log_{10} Q_{vel}$), generating a heat map of the error landscape.
+* ** Professional Visualization:** Scripts for **Gnuplot** to render real-time tracking dashboards and 3D optimization surfaces.
 
-## 📈 Visualizations
+##  Visualizations
 
 ### 1. The Optimization Surface (Heatmap)
 Visualizing the RMSE valley to find the optimal $Q$ matrix parameters. The deep blue region represents the minimum error configuration.
@@ -27,7 +27,7 @@ The filter achieves a perfect Gaussian error distribution centered at zero, demo
 ![Tracking Dashboard](img/dashboard.png)
 *(Note: Run `plots/dashboard.gp` to generate this view)*
 
-## 🛠️ Mathematical Model
+##  Mathematical Model
 
 The system models a Continuous White Noise Acceleration (CWNA) / Constant Velocity model:
 
@@ -39,7 +39,7 @@ $$Q = \begin{bmatrix} \sigma_{pos}^2 & 0 \\ 0 & \sigma_{vel}^2 \end{bmatrix}$$
 
 We iterate over orders of magnitude for $\sigma^2$ to find the global minimum on the error surface.
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 * **GFortran** (GNU Fortran Compiler)
@@ -70,7 +70,7 @@ We iterate over orders of magnitude for $\sigma^2$ to find the global minimum on
     gnuplot -p plots/heatmap.gp
     ```
 
-## 📂 Project Structure
+##  Project Structure
 
 ```text
 .
