@@ -19,12 +19,12 @@ This project goes beyond standard filtering by implementing a **Grid Search Opti
 
 ### 1. The Optimization Surface (Heatmap)
 Visualizing the RMSE valley to find the optimal $Q$ matrix parameters. The deep blue region represents the minimum error configuration.
-![Optimization Surface](img/heatmap.png)
+![Optimization Surface](images/hyper-surface.png)
 *(Note: Run `plots/heatmap.gp` to generate this interactive 3D view)*
 
 ### 2. Real-Time Tracking & Error Distribution
 The filter achieves a perfect Gaussian error distribution centered at zero, demonstrating an unbiased estimator.
-![Tracking Dashboard](img/dashboard.png)
+![Tracking Dashboard](images/.png)
 *(Note: Run `plots/dashboard.gp` to generate this view)*
 
 ##  Mathematical Model
