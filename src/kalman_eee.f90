@@ -50,8 +50,8 @@ program kalman_complete_system
     
     ! -- SINTONIZACIÓN (TUNING) AGRESIVA PARA CURVAS --
     Q = 0.0_dp
-    Q(1,1) = 0.0001_dp    ! Incertidumbre en posición
-    Q(2,2) = 0.01d0       ! ALTA Incertidumbre en velocidad
+    Q(1,1) = 10**(-7.6d0)   ! Incertidumbre en posición
+    Q(2,2) = 10**(-2.6d0)     ! ALTA Incertidumbre en velocidad  !! esto se ha obtenido de la superficie de error del optimizador, es el punto donde el error es mínimo, lo que indica que el filtro confía más en la medición para la posición pero permite mucha flexibilidad en la velocidad, lo cual es lógico dado que la señal es una curva y no un movimiento rectilíneo uniforme.
     R_noise = 0.05_dp     ! Confianza media en el sensor
 
     ! -- ESTADO INICIAL --

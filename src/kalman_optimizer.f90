@@ -1,141 +1,155 @@
-program kalman_optimizer
+program kalman_optimizer_phase_space
     implicit none 
 
-    ! Parámetros de la simulación
+    ! --- PARÁMETROS ---
+    integer, parameter :: dp = kind(0.d0) ! Doble precisión (Real*8)
     integer, parameter :: n = 2000
-    real(8), parameter :: pi = 3.141592653589793d0
+    real(dp), parameter :: pi = 3.141592653589793_dp
     
-    ! Arrays de datos
-    real(8) :: t(n), z(n), true_signal(n)
+    ! --- ARRAYS DE DATOS ---
+    real(dp) :: t(n), z(n), true_pos(n), true_vel(n)
     
-    ! Variables del Filtro de Kalman
-    real(8) :: m(2), P(2,2), Q(2,2), F(2,2), R_noise
-    real(8) :: dt
+    ! --- KALMAN VARS ---
+    real(dp) :: m(2), P(2,2), Q(2,2), F(2,2), R_noise
+    real(dp) :: dt
     
-    ! Variables para el Grid Search
-    real(8) :: q1_exp, q2_exp       ! El valor real del exponente
-    real(8) :: q1_val, q2_val       ! El valor real de Q (10^exp)
-    real(8) :: mse, rmse            
-    real(8) :: error_inst           
+    ! --- OPTIMIZACIÓN (GRID SEARCH) ---
+    real(dp) :: q1_exp, q2_exp        ! Exponentes (Log10)
+    real(dp) :: q1_val, q2_val        ! Valores Reales
+    real(dp) :: mse, rmse             
+    real(dp) :: err_pos, err_vel      ! Errores individuales
     
-    ! --- NUEVAS VARIABLES PARA LOS BUCLES ---
-    integer :: i1, i2              ! Contadores enteros para los bucles externos
-    ! Rango: de -9.0 a 1.0 son 10 unidades. Paso 0.2. Total 50 pasos.
-    integer, parameter :: steps = 50 
+    ! --- BUCLES ---
+    integer :: i1, i2      ! Contadores optimización
+    integer :: steps = 50  ! Resolución del mapa de calor
+    integer :: k           ! Contador simulación
     
-    ! Configuración del ruido
-    real(8) :: var_val 
-    integer :: i, k
+    ! --- GENERACIÓN DE RUIDO ---
+    real(dp) :: var_val 
     
-    ! --- 1. CONFIGURACIÓN INICIAL ---
-    var_val = 0.3d0          
-    R_noise = 0.09d0         
+    ! ====================================================================
+    ! 1. CONFIGURACIÓN Y GENERACIÓN DE LA "VERDAD"
+    ! ====================================================================
+    var_val = 0.3_dp      
+    R_noise = 0.09_dp     
     
-    ! Generación de datos
-    t(1) = 0.0d0
-    true_signal(1) = sin(t(1))
+    ! Generamos el eje temporal y la verdad física
+    t(1) = 0.0_dp
+    true_pos(1) = sin(t(1))
+    true_vel(1) = cos(t(1)) ! La derivada exacta
     z(1) = signal_func(t(1), var_val)
     
-    do i = 2, n
-        t(i) = t(i-1) + (4.0d0 * pi / real(n, 8))
-        true_signal(i) = sin(t(i))
-        z(i) = signal_func(t(i), var_val)
+    do k = 2, n
+        t(k) = t(k-1) + (4.0_dp * pi / real(n, dp))
+        
+        ! VERDAD DE FÍSICA (Estado completo)
+        true_pos(k) = sin(t(k))
+        true_vel(k) = cos(t(k)) 
+        
+        ! MEDICIÓN (Solo posición + ruido)
+        z(k) = signal_func(t(k), var_val)
     end do
     
     dt = t(2) - t(1)
     
-    ! Matriz F Cinemática
-    F(1,1) = 1.0d0; F(1,2) = dt
-    F(2,1) = 0.0d0; F(2,2) = 1.0d0
+    ! Matriz F (Modelo Velocidad Constante)
+    F(1,1) = 1.0_dp; F(1,2) = dt
+    F(2,1) = 0.0_dp; F(2,2) = 1.0_dp
 
-    print *, "Iniciando Grid Search masivo (Corregido)..."
+    print *, "--- OPTIMIZADOR DE ESPACIO DE FASES (EEE) ---"
+    print *, "Minimizando error conjunto: Posicion + Velocidad"
+    
     open(20, file='error_surface.txt', status='replace')
-    write(20, *) "Log_Q_Pos Log_Q_Vel RMSE" 
+    write(20, *) "Log_Q_Pos Log_Q_Vel RMSE_Combined" 
 
-    ! --- 2. BUCLE DE OPTIMIZACIÓN CON ENTEROS ---
-    ! Vamos de 0 a 50 pasos.
-    ! Fórmula: valor = inicio + (paso * contador)
-    ! Inicio = -9.0, Paso = 0.2
+    ! ====================================================================
+    ! 2. GRID SEARCH (BÚSQUEDA DE LA Q PERFECTA)
+    ! ====================================================================
+    ! Exploramos exponentes de -9.0 a 1.0
     
     do i1 = 0, steps
-        ! Calculamos el exponente real aquí dentro
-        q1_exp = -9.0d0 + (real(i1, 8) * 0.2d0)
+        q1_exp = -9.0_dp + (real(i1, dp) * 0.2_dp)
         
         do i2 = 0, steps
-            q2_exp = -9.0d0 + (real(i2, 8) * 0.2d0)
+            q2_exp = -9.0_dp + (real(i2, dp) * 0.2_dp)
             
-            ! A. Configurar Q
-            Q = 0.0d0
-            q1_val = 10.0d0**q1_exp
-            q2_val = 10.0d0**q2_exp
-            
-            Q(1,1) = q1_val
-            Q(2,2) = q2_val
+            ! A. Configurar Matriz Q candidata
+            Q = 0.0_dp
+            Q(1,1) = 10.0_dp**q1_exp
+            Q(2,2) = 10.0_dp**q2_exp
             
             ! B. Reiniciar Filtro
-            m = 0.0d0      
-            P = 0.0d0
-            P(1,1) = 1.0d0 
-            P(2,2) = 1.0d0
-            mse = 0.0d0    
+            m = 0.0_dp      
+            P = 0.0_dp; P(1,1) = 1.0_dp; P(2,2) = 1.0_dp
+            mse = 0.0_dp    
             
-            ! C. Simulación
+            ! C. Simulación del Filtro
             do k = 1, n
                 call kalman_step_cinematico(z(k), F, m, P, Q, R_noise)
                 
+                ! D. CÁLCULO DE ERROR (A partir del paso 50 para estabilizar)
                 if (k > 50) then
-                    error_inst = m(1) - true_signal(k)
-                    mse = mse + (error_inst**2)
+                    err_pos = m(1) - true_pos(k)
+                    err_vel = m(2) - true_vel(k) ! <--- ESTO ES LO NUEVO  !!el tema de esto es que conocemos las señales true generalmente esto no es posible habria que ver otros approaches para evaluar el error de velocidad, pero para este ejercicio es válido asumir que la verdad es conocida y así evaluar el error de ambos estados
+                    
+                    ! Sumamos cuadrados de ambos estados
+                    mse = mse + (err_pos**2) + (err_vel**2)
                 end if
             end do
             
-            ! D. Calcular RMSE
-            rmse = sqrt(mse / real(n-50, 8))
+            ! E. RMSE Combinado
+            rmse = sqrt(mse / real(n-50, dp))
             
-            ! E. Guardar
+            ! Guardar resultado
             write(20, *) q1_exp, q2_exp, rmse
             
         end do
         
-        print *, "Procesado Q_Pos 10^", q1_exp
-        write(20, *) "" 
+        ! Feedback visual en terminal para no desesperar
+        if (mod(i1, 10) == 0) print *, "Procesando Q_Pos 10^", q1_exp
+        write(20, *) "" ! Salto de línea para Gnuplot pm3d
     end do
 
     close(20)
-    print *, "Calculo finalizado. Datos en error_surface.txt"
+    print *, "Calculo finalizado. Ejecuta 'heatmap.gp' para ver el optimo."
 
 contains
 
+    ! --- Función auxiliar: Genera señal ruidosa ---
     function signal_func(val, v) result(f)
-        real(8), intent(in) :: val, v
-        real(8) :: f
+        real(dp), intent(in) :: val, v
+        real(dp) :: f
         f = sin(val) + v * gaussian_noise()
     end function signal_func
 
+    ! --- Función auxiliar: Ruido Gaussiano ---
     function gaussian_noise() result(z_noise)
-        real(8) :: u1, u2, z_noise
+        real(dp) :: u1, u2, z_noise
         call random_number(u1)
         call random_number(u2)
-        z_noise = sqrt(-2.0d0 * log(u1)) * cos(2.0d0 * pi * u2)
+        if (u1 < 1.0d-30) u1 = 1.0d-30
+        z_noise = sqrt(-2.0_dp * log(u1)) * cos(2.0_dp * pi * u2)
     end function gaussian_noise
 
+    ! --- SUBRUTINA: UN PASO DE KALMAN ---
     subroutine kalman_step_cinematico(y, F, m, P, Q, R)
-        real(8), intent(in)    :: y, R
-        real(8), intent(in)    :: F(2,2), Q(2,2)
-        real(8), intent(inout) :: m(2), P(2,2)
+        real(dp), intent(in)    :: y, R
+        real(dp), intent(in)    :: F(2,2), Q(2,2)
+        real(dp), intent(inout) :: m(2), P(2,2)
         
-        real(8) :: m_pred(2), P_pred(2,2)
-        real(8) :: H(2), S, y_res
-        real(8) :: K(2), PHt(2)
+        real(dp) :: m_pred(2), P_pred(2,2)
+        real(dp) :: H(2), S, y_res, K(2), PHt(2)
         
+        ! 1. Predicción
         m_pred = matmul(F, m)
         P_pred = matmul(matmul(F, P), transpose(F)) + Q
         
-        H(1) = 1.0d0
-        H(2) = 0.0d0
+        ! 2. Actualización
+        H = [1.0_dp, 0.0_dp] ! Solo medimos posición
         
         y_res = y - m_pred(1)
         
+        ! K = P*H' / S
         PHt(1) = P_pred(1,1)*H(1) + P_pred(1,2)*H(2)
         PHt(2) = P_pred(2,1)*H(1) + P_pred(2,2)*H(2)
         
@@ -146,11 +160,12 @@ contains
         
         m = m_pred + (K * y_res)
         
-        P(1,1) = P_pred(1,1) - K(1)*PHt(1)
-        P(1,2) = P_pred(1,2) - K(1)*PHt(2)
-        P(2,1) = P_pred(2,1) - K(2)*PHt(1)
-        P(2,2) = P_pred(2,2) - K(2)*PHt(2)
+        ! P = P - K*S*K'
+        P(1,1) = P_pred(1,1) - K(1)*S*K(1)
+        P(1,2) = P_pred(1,2) - K(1)*S*K(2)
+        P(2,1) = P_pred(2,1) - K(2)*S*K(1)
+        P(2,2) = P_pred(2,2) - K(2)*S*K(2)
         
     end subroutine kalman_step_cinematico
 
-end program kalman_optimizer
+end program kalman_optimizer_phase_space
