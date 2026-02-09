@@ -25,7 +25,12 @@ Visualizing the RMSE valley to find the optimal $Q$ matrix parameters. The deep 
 ### 2. Real-Time Tracking & Error Distribution
 The filter achieves a perfect Gaussian error distribution centered at zero, demonstrating an unbiased estimator.
 ![Tracking Dashboard](image/signal-error.png)
-*(Note: Run `plots/dashboard.gp` to generate this view)*
+
+### 3. State Space Analysis (Phase Portrait)
+Implemented in the `kalman_eee` program, this visualization fundamentally differs from the previous ones by **eliminating the time dependency**. Instead of plotting against time ($t$), it maps the **Phase Space**, displaying the direct dynamic relationship between state variables (e.g., Measurement vs. Estimate, or Position vs. Velocity).
+
+This view is essential for analyzing the system's stability, covariance convergence, and "pure" dynamic behavior without the temporal axis.
+*(Note: Run `plots/plot_ee.gp` to generate this phase space view)*
 
 ##  Mathematical Model
 
